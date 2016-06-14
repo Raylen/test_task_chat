@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Best Chat Ever</title>
+</head>
+<body>
+    <h1>Welcome to our chat!</h1>
+    <input type="text" maxlength="20" id="WebChatNameID" placeholder="Укажите ваше имя... " > <br>
+    <input type="button" onclick="enter_chat();" value="Войти в чат" >
+    <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script language="JavaScript" type="text/javascript">
+        var name;
+        var message;
+        var user_id;
+        ws = new WebSocket("ws://localhost:6544");
+
+        // вызовется, когда соединение будет установлено:
+        ws.onopen = function() {
+        };
+
+        // вызовется, когда соединено закроется
+        ws.onclose = function() {
+        };
+
+        // вызовется, когда браузер получает какие-то данные через веб-сокет
+        ws.onmessage = function(evt) {
+            user_id = JSON.parse(evt.data);
+        };
+
+        function ws_send(message)
+        {
+            var JSONmsg = JSON.stringify(message);
+            ws.send(JSONmsg);
+        }
+
+        function enter_chat()
+        {
+            name = $("#WebChatNameID").val();
+            name.replace(/\s/g, "");
+            message = '(User_entered) ' + name;
+            ws_send(message);
+            document.location.href = "http://localhost:6543/grouplist?user_id=" + user_id;
+        }
+    </script>
+</body>
+</html>

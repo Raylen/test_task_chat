@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset = "utf-8">
+    <meta http-equiv = "X-UA-Compatible" content = "IE = edge">
+    <meta name = "viewport" content = "width = device-width, initial-scale = 1">
+    <link href = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel = "stylesheet">
+
+    <title>Best Chat Ever</title>
+</head>
+<body>
+    <h1 id="Topic">Welcome to our chat!</h1>
+    <input type="text" id="WebChatNameID" placeholder="Укажите ваше имя..." > <br>
+    <div class="col-sm-12">
+        <div id="ChatForm" class="col-sm-6" style="width: 70%"></div>
+        <div id="ChatMembers" class="col-sm-6" style="width: 30%"></div>
+    </div> <br>
+    <textarea id = "WebChatTextID" placeholder = "Отправить сообщение" ></textarea><br>
+    <input type="button" onclick="web_send_msg();" value="Отправить" >
+    <script src = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
+    <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script language="JavaScript" type="text/javascript">
+        var user_id;
+        var group_id;
+        var message;
+        var paramValue;
+        var name;
+        var grouptopic;
+        group_id = document.location.href.split("=")[1].split("&")[0];
+        user_id = document.location.href.split("=")[2];
+        ws = new WebSocket("ws://localhost:6544");
+
+        // вызовется, когда соединение будет установлено:
+        ws.onopen = function() {
+            message = '(User_connected) ' + user_id + ' ' + group_id;
+            ws_send(message);
+        };
+
+        // вызовется, когда соединение закроется
+        ws.onclose = function() {
+        };
+
+        // вызовется, когда браузер получает какие-то данные через веб-сокет
+        ws.onmessage = function(evt) {
+            message = JSON.parse(evt.data);
+            var spl_msg = message.split(" ");
+            var username;
+            var full_msg;
+            var msg_type = spl_msg[0];
+            if (msg_type == "(user)") {
+                username = spl_msg[1];
+                var newEl = document.createElement('p');
+                newEl.id = "u_" + username;
+                newEl.innerHTML = username;
+                $("#ChatMembers").append(newEl);
+            } else if (msg_type == "(self)") {
+                username = spl_msg[1];
+                $("#WebChatNameID").val(username);
+                full_msg = "";
+                for (var i = 1; i < spl_msg.length; i++){
+                    full_msg = full_msg + spl_msg[i];
+                }
+                $("#Topic").innerHTML = full_msg;
+            } else if (msg_type == "(msg)") {
+                full_msg = "";
+                for (var i = 1; i < spl_msg.length; i++){
+                    full_msg = full_msg + spl_msg[i];
+                }
+                $("#ChatForm").append("<p>" + full_msg + "</p>");
+            } else if (msg_type == "(remove)") {
+                username = spl_msg[1];
+                var parent = $("#ChatMembers");
+                var element = $("#u_" + username);
+                parent.removeChild(element);
+            } else {
+                $("#ChatForm").append("<p>" + message + "</p>");
+            }
+        }
+
+        message = '(Get_names) ' + group_id;
+        ws_send(message);
+
+        // Отправляет сообщение в чат
+        function web_send_msg()
+        {
+            // Получение значений из элементов ввода.
+            var textfield = $("#WebChatTextID");
+            var text = textfield.val(); // Получаем текст сообщения
+
+            // Очистка поля с текстом сообщения
+            textfield.val("");
+
+            // Добавление отправленного сообщения к списку сообщений.
+            //$("#ChatForm").append("<p><b>"+name+": </b>"+text+"</p>");
+
+            // Отправка сообщения в канал чата
+            message = name + ': ' + text;
+            ws_send(message);
+        }
+
+        function ws_send(message)
+        {
+            var JSONmsg = JSON.stringify(message);
+            ws.send(JSONmsg);
+        }
+
+        jQuery(window).bind(
+            "beforeunload",
+            function() {
+                message = 'Farewell ' + name + ' !';
+                ws_send(message);
+                ws.close();
+            }
+        );
+    </script>
+</body>
+</html>
