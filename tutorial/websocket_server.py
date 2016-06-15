@@ -30,7 +30,13 @@ class MyServerProtocol(WebSocketServerProtocol):
         message = json.loads(payload.decode('utf8'))   # message - python string, payload - utf8 encoded json string
         words = message.split(" ")
         # message structure will match one of the following types:
-        #   message - "<name>: <message>"
+        #   "(User_entered) <username>"
+        #   "(Get_groups)"
+        #   "(Group_created) <topic>"
+        #   "(Get_names) <group_id>"
+        #   "(User_connected) <user_id> <group_id>"
+        #   "(User_disconnected) <user_id> <group_id>"
+        #   "(Msg) <user_id> <group_id> <message>"
         if words[0] == '(User_entered)':
             # check if user already exists, 1 - return id, 0 - create and return id
             try:
@@ -68,6 +74,9 @@ class MyServerProtocol(WebSocketServerProtocol):
             except psycopg2.Error as exc:
                 print(exc)
                 return
+            except Exception as exc:
+                print(exc)
+                return
             result = cursor.fetchone()
             group_id = result[0]
             self.sendJSONmsg(str(group_id) + "," + topic, isBinary)
@@ -85,11 +94,17 @@ class MyServerProtocol(WebSocketServerProtocol):
             except psycopg2.Error as exc:
                 print(exc)
                 return
+            except Exception as exc:
+                print(exc)
+                return
             result = cursor.fetchone()
             username = result[0]
             try:
                 cursor.execute("""SELECT topic FROM groups WHERE group_id='{0}'""".format(words[2]))
             except psycopg2.Error as exc:
+                print(exc)
+                return
+            except Exception as exc:
                 print(exc)
                 return
             result = cursor.fetchone()
@@ -161,6 +176,9 @@ class MyServerProtocol(WebSocketServerProtocol):
                 cursor.execute("""INSERT INTO messages (message, created, updated, user_id, group_id)
                                   VALUES ('{0}', now(), now(), '{1}', '{2}')""".format(msg, int(uid), int(gid)))
             except psycopg2.Error as exc:
+                print(exc)
+                return
+            except Exception as exc:
                 print(exc)
                 return
             for i in range(len(clients)):

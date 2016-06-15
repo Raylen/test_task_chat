@@ -8,11 +8,6 @@ from pyramid.view import (
 )
 
 
-#@view_defaults(renderer='home.pt')
-#class TutorialViews:
-#    def __init__(self, request):
-#        self.request = request
-
 @view_defaults(renderer='home.jinja2')
 class HomeView:
     def __init__(self, request):
