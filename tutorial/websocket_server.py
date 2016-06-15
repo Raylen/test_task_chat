@@ -43,7 +43,6 @@ class MyServerProtocol(WebSocketServerProtocol):
                 try:
                     cursor.execute("""INSERT INTO active_users (name, created, updated) VALUES ('{0}', now(), now())
                                       RETURNING user_id""".format(words[1]))
-                    print("executing insert")
                 except psycopg2.Error as exc:
                     print(exc)
                     return
@@ -164,7 +163,6 @@ class MyServerProtocol(WebSocketServerProtocol):
             except psycopg2.Error as exc:
                 print(exc)
                 return
-            print(clients[0])
             for i in range(len(clients)):
                 if clients[i][3] == gid:
                     clients[i][0].sendJSONmsg(msg, isBinary)
@@ -173,12 +171,8 @@ class MyServerProtocol(WebSocketServerProtocol):
         print("WebSocket connection closed: {0}".format(reason))
 
     def sendJSONmsg(self, message, isBinary):
-        print(self)
         jsonmsg = json.dumps(message)
-        # print(type(jsonmsg), jsonmsg)
-        # jsonmsg = str(message).encode('utf-8')
         self.sendMessage(jsonmsg.encode('utf-8'), isBinary)
-        # self.sendMessage(jsonmsg, True)
 
 
 if __name__ == '__main__':

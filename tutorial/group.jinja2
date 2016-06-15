@@ -4,20 +4,34 @@
     <meta charset = "utf-8">
     <meta http-equiv = "X-UA-Compatible" content = "IE = edge">
     <meta name = "viewport" content = "width = device-width, initial-scale = 1">
-    <link href = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/css/bootstrap.min.css" rel = "stylesheet">
+    <link href = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel = "stylesheet">
 
     <title>Best Chat Ever</title>
 </head>
 <body>
-    <h1>Welcome to our chat!</h1>
-    <h3 id="Topic1">Topic</h3>
-    <input type="text" id="WebChatNameID" placeholder="Укажите ваше имя..." > <br>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-8">
+                <h1 style="padding-left: 15px; margin: 15px">Welcome to our chat!</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-8">
+                <h3 id="Topic" style="padding-left: 15px; margin: 15px">Topic</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-8">
+                <h5 id="WebChatNameID" style="padding-left: 15px; margin: 15px"></h5> <br>
+            </div>
+        </div>
+    </div>
     <div class="col-sm-12">
-        <div id="ChatForm" class="col-sm-6" style="width: 70%"></div>
-        <div id="ChatMembers" class="col-sm-6" style="width: 30%"></div>
+        <div id="ChatForm" class="col-sm-6" style="width: 65%; padding-left: 15px; margin-left: 15px"></div>
+        <div id="ChatMembers" class="col-sm-6" style="width: 30%; padding-left: 15px"></div>
     </div> <br>
-    <textarea id = "WebChatTextID" placeholder = "Отправить сообщение" ></textarea><br>
-    <input type="button" onclick="web_send_msg();" value="Отправить" >
+    <textarea id = "WebChatTextID" placeholder = "Отправить сообщение" style="padding-left: 15px; margin-left: 15px"></textarea><br>
+    <input type="button" onclick="web_send_msg();" value="Отправить" style="padding-left: 15px; margin: 15px">
     <script src = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>
     <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script language="JavaScript" type="text/javascript">
@@ -58,14 +72,12 @@
                 $("#ChatMembers").append(newEl);
             } else if (msg_type == "(self)") {
                 username = spl_msg[1];
-                $("#WebChatNameID").val(username);
+                $("#WebChatNameID").html("You logged in as: " + username);
                 full_msg = "";
                 for (var i = 2; i < spl_msg.length; i++){
                     full_msg = full_msg + spl_msg[i];
                 }
-                alert(full_msg);
-                $("#Topic1").html("Group topic: " + full_msg);
-                alert($("#Topic1").html());
+                $("#Topic").html("Group topic: " + full_msg);
             } else if (msg_type == "(msg)") {
                 full_msg = "";
                 for (var i = 1; i < spl_msg.length; i++){
@@ -91,9 +103,6 @@
 
             // Очистка поля с текстом сообщения
             textfield.val("");
-
-            // Добавление отправленного сообщения к списку сообщений.
-            //$("#ChatForm").append("<p><b>"+name+": </b>"+text+"</p>");
 
             // Отправка сообщения в канал чата
             message = '(Msg) ' + user_id + ' ' + group_id + ' ' + name + ': ' + text;

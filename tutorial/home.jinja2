@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset = "utf-8">
+    <meta http-equiv = "X-UA-Compatible" content = "IE = edge">
+    <meta name = "viewport" content = "width = device-width, initial-scale = 1">
+    <link href = "//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" rel = "stylesheet">
+
     <title>Best Chat Ever</title>
 </head>
 <body>
-    <h1>Welcome to our chat!</h1>
-    <input type="text" maxlength="20" id="WebChatNameID" placeholder="Enter your name" > <br>
-    <input type="button" onclick="enter_chat();" value="Войти в чат" >
-    <input type="button" onclick="send_name();" value="Проверить имя" >
+    <h1 style="padding-left: 15px; margin: 15px">Welcome to our chat!</h1>
+    <input type="text" maxlength="20" id="WebChatNameID" placeholder="Enter your name" style="padding-left: 15px; margin-left: 15px" onchange="document.getElementById('icon').className=''"><i id="icon"></i> <br><br>
+    <input type="button" onclick="enter_chat();" value="Войти в чат" style="padding-left: 15px; margin-left: 15px">
+    <input type="button" onclick="send_name();" value="Проверить имя" style="padding-left: 15px; margin-left: 15px">
     <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script language="JavaScript" type="text/javascript">
         var name;
@@ -26,6 +31,8 @@
         // вызовется, когда браузер получает какие-то данные через веб-сокет
         ws.onmessage = function(evt) {
             user_id = JSON.parse(evt.data);
+            var ico = document.getElementById("icon");
+            ico.className = "glyphicon glyphicon-ok";
         };
 
         function ws_send(message)

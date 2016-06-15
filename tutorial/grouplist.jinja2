@@ -4,10 +4,10 @@
     <title>Best Chat Ever</title>
 </head>
 <body>
-    <h1>Join one of the existing groups or create your own!</h1>
-    <div id="GroupList"></div>
-    <input type="text" maxlength="40" id="GroupID" placeholder="Enter new group topic" > <br>
-    <input type="button" onclick="create_group();" value="Enter chat!" >
+    <h1 style="margin: 15px">Join one of the existing groups or create your own!</h1>
+    <table id="GroupList" style="margin: 15px"></table>
+    <input type="text" maxlength="40" id="GroupID" placeholder="Enter new group topic" style="padding-left: 15px; margin: 15px"> <br>
+    <input type="button" onclick="create_group();" value="Create a group!" style="padding-left: 15px; margin: 15px">
     <script type = "text/javascript" src = "http://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
     <script language="JavaScript" type="text/javascript">
         var message;
@@ -28,9 +28,13 @@
         // вызовется, когда браузер получает какие-то данные через веб-сокет
         ws.onmessage = function(evt){
             var parsed_data = JSON.parse(evt.data).split(",");
-            var newEl = document.createElement('a');
-            newEl.href = "http://localhost:6543/group?group=" + parsed_data[0] + "&user_id=" + user_id;
-            newEl.innerHTML = parsed_data[1];
+            var newEl = document.createElement("tr");
+            var newEl1 = document.createElement("td");
+            var newEl2 = document.createElement("a");
+            newEl2.href = "http://localhost:6543/group?group=" + parsed_data[0] + "&user_id=" + user_id;
+            newEl2.innerHTML = parsed_data[1];
+            newEl1.appendChild(newEl2);
+            newEl.appendChild(newEl1);
             $("#GroupList").append(newEl);
         };
 
