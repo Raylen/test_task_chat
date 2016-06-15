@@ -9,7 +9,8 @@
     <title>Best Chat Ever</title>
 </head>
 <body>
-    <h1 id="Topic">Welcome to our chat!</h1>
+    <h1>Welcome to our chat!</h1>
+    <h3 id="Topic1">Topic</h3>
     <input type="text" id="WebChatNameID" placeholder="Укажите ваше имя..." > <br>
     <div class="col-sm-12">
         <div id="ChatForm" class="col-sm-6" style="width: 70%"></div>
@@ -32,6 +33,8 @@
 
         // вызовется, когда соединение будет установлено:
         ws.onopen = function() {
+            message = '(Get_names) ' + group_id;
+            ws_send(message);
             message = '(User_connected) ' + user_id + ' ' + group_id;
             ws_send(message);
         };
@@ -57,14 +60,16 @@
                 username = spl_msg[1];
                 $("#WebChatNameID").val(username);
                 full_msg = "";
-                for (var i = 1; i < spl_msg.length; i++){
+                for (var i = 2; i < spl_msg.length; i++){
                     full_msg = full_msg + spl_msg[i];
                 }
-                $("#Topic").innerHTML = full_msg;
+                alert(full_msg);
+                $("#Topic1").html("Group topic: " + full_msg);
+                alert($("#Topic1").html());
             } else if (msg_type == "(msg)") {
                 full_msg = "";
                 for (var i = 1; i < spl_msg.length; i++){
-                    full_msg = full_msg + spl_msg[i];
+                    full_msg = full_msg + spl_msg[i] + " ";
                 }
                 $("#ChatForm").append("<p>" + full_msg + "</p>");
             } else if (msg_type == "(remove)") {
@@ -76,9 +81,6 @@
                 $("#ChatForm").append("<p>" + message + "</p>");
             }
         }
-
-        message = '(Get_names) ' + group_id;
-        ws_send(message);
 
         // Отправляет сообщение в чат
         function web_send_msg()
@@ -94,7 +96,7 @@
             //$("#ChatForm").append("<p><b>"+name+": </b>"+text+"</p>");
 
             // Отправка сообщения в канал чата
-            message = name + ': ' + text;
+            message = '(Msg) ' + user_id + ' ' + group_id + ' ' + name + ': ' + text;
             ws_send(message);
         }
 
@@ -107,7 +109,7 @@
         jQuery(window).bind(
             "beforeunload",
             function() {
-                message = 'Farewell ' + name + ' !';
+                message = '(User_disconnected) ' + user_id + ' ' + group_id;
                 ws_send(message);
                 ws.close();
             }

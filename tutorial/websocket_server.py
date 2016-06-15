@@ -27,83 +27,87 @@ class MyServerProtocol(WebSocketServerProtocol):
             print("Binary message received: {0} bytes".format(len(payload)))
         else:
             print("Text message received: {0}".format(payload.decode('utf8')))
-        message = payload.decode('utf8')   # message - python string, payload - json string
-        words = message.split('"')[1].split(" ")
+        message = json.loads(payload.decode('utf8'))   # message - python string, payload - utf8 encoded json string
+        words = message.split(" ")
         # message structure will match one of the following types:
         #   message - "<name>: <message>"
         if words[0] == '(User_entered)':
             # check if user already exists, 1 - return id, 0 - create and return id
             try:
                 cursor.execute("""SELECT user_id FROM active_users WHERE name='{0}' """.format(words[1]))
-            except:
-                print('Cannot execute query ' + 'SELECT user_id FROM active_users WHERE name=' + words[1])
-                print("""SELECT user_id FROM active_users WHERE name="{0}" """.format(words[1]));
+            except psycopg2.Error as exc:
+                print(exc)
                 return
-            rows = cursor.fetchall()
-            if len(rows) == 0:
+            result = cursor.fetchone()
+            if result is None:
                 try:
-                    cursor.execute("""INSERT INTO active_users (name, created) VALUES (%s, now()) RETURNING user_id""",
-                                   words[1])
-                except:
-                    print('Cannot execute query ' + 'INSERT INTO active_users (name) VALUES ' + words[1] +
-                          'RETURNING user_id')
+                    cursor.execute("""INSERT INTO active_users (name, created, updated) VALUES ('{0}', now(), now())
+                                      RETURNING user_id""".format(words[1]))
+                    print("executing insert")
+                except psycopg2.Error as exc:
+                    print(exc)
                     return
-                rows = cursor.fetchall()
-            self.sendJSONmsg(rows[0][0][0], isBinary)
+                result = cursor.fetchone()
+            # print(result)
+            self.sendJSONmsg(result[0], isBinary)
         elif words[0] == '(Get_groups)':
             # getting group list
             try:
                 cursor.execute("""SELECT group_id, topic FROM groups""")
-            except:
-                print('Cannot execute query ' + 'SELECT group_id, topic FROM groups')
+            except psycopg2.Error as exc:
+                print(exc)
                 return
             rows = cursor.fetchall()
             for row in rows:
-                self.sendJSONmsg(row[0][0] + ',' + row[0][1], isBinary)
+                self.sendJSONmsg(str(row[0]) + ',' + row[1], isBinary)
         elif words[0] == '(Group_created)':
             # created new group
-            topic = message.split('"')[1].split(") ")[1]
+            topic = message.split(") ")[1]
             try:
-                cursor.execute("""INSERT INTO groups (topic, created) VALUES ((%s), now()) RETURNING group_id""",
-                               topic)
-            except:
-                print('Cannot execute query ' + 'INSERT INTO groups (topic, created) VALUES ' + topic + 'now()' +
-                      'RETURNING group_id')
+                cursor.execute("""INSERT INTO groups (topic, created, updated) VALUES ('{0}', now(), now())
+                                  RETURNING group_id""".format(topic))
+            except psycopg2.Error as exc:
+                print(exc)
                 return
-            rows = cursor.fetchall()
-            group_id = rows[0][0][0]
-            self.sendJSONmsg(group_id + "," + topic, isBinary)
+            result = cursor.fetchone()
+            group_id = result[0]
+            self.sendJSONmsg(str(group_id) + "," + topic, isBinary)
         elif words[0] == '(Get_names)':
             # user requested group members upon entering group
-            for i in range(len(clients[0])):
-                if clients[3][i] == words[1]:   # if client is in group
-                    self.sendJSONmsg('(user) ' + clients[1][i], isBinary)
+            for i in range(len(clients)):
+                if clients[i][3] == words[1]:   # if client is in group
+                    self.sendJSONmsg('(user) ' + clients[i][1], isBinary)
         elif words[0] == '(User_connected)':
             # 1)register entering user
             # 2)return user his name and group topic
             # 3)send welcoming messages to everyone in group
             try:
-                cursor.execute("""SELECT name FROM active_users WHERE user_id=(%s)""", words[1])
-            except:
-                print('Cannot execute query ' + 'SELECT user_id FROM active_users WHERE name=' + words[1])
+                cursor.execute("""SELECT name FROM active_users WHERE user_id='{0}'""".format(words[1]))
+            except psycopg2.Error as exc:
+                print(exc)
                 return
-            rows = cursor.fetchall()
-            username = rows[0][0][0]
+            result = cursor.fetchone()
+            username = result[0]
             try:
-                cursor.execute("""SELECT topic FROM groups WHERE group_id=(%s)""", words[2])
-            except:
-                print('Cannot execute query ' + 'SELECT topic FROM groups WHERE group_id=' + words[2])
+                cursor.execute("""SELECT topic FROM groups WHERE group_id='{0}'""".format(words[2]))
+            except psycopg2.Error as exc:
+                print(exc)
                 return
-            rows = cursor.fetchall()
-            topic = rows[0][0][0]
+            result = cursor.fetchone()
+            topic = result[0]
             # 1)
+            #clients[0].append(self)
+            #clients[1].append(username)
+            #clients[2].append(words[1])
+            #clients[3].append(words[2])
             clients.append([self, username, words[1], words[2]])
             # 2)
             self.sendJSONmsg('(self) ' + username + ' ' + topic, isBinary)
             # 3)
-            for i in clients:
-                if clients[3][i] == words[2]:
-                    clients[0][i].sendJSONmsg('(msg) Welcome ' + username + ' !', isBinary)
+            for i in range(len(clients)):
+                if clients[i][3] == words[2]:
+                    clients[i][0].sendJSONmsg('(msg) Welcome ' + username + ' !', isBinary)
+                    clients[i][0].sendJSONmsg('(user) ' + username, isBinary)
 #        elif words[0] == '(Rename)':
             # 1) update info in db
             # 2) update everyone's in this group display of this name
@@ -131,19 +135,16 @@ class MyServerProtocol(WebSocketServerProtocol):
             uid = words[1]
             gid = words[2]
             # 1)
-            for i in range(len(clients[0])):
-                if clients[2][i] == uid and clients[3][i] == gid:
-                    username = clients[1][i]
-                    del clients[0][i]
-                    del clients[1][i]
-                    del clients[2][i]
-                    del clients[3][i]
+            for i in range(len(clients)):
+                if clients[i][2] == uid and clients[i][3] == gid:
+                    username = clients[i][1]
+                    del clients[i]
                     break
             # 2)
-            for i in clients:
-                if clients[3][i] == words[2]:
-                    clients[0][i].sendJSONmsg('(remove) ' + username, isBinary)
-                    clients[0][i].sendJSONmsg('(msg) Farewell ' + username + ' !', isBinary)
+            for i in range(len(clients)):
+                if clients[i][3] == words[2]:
+                    clients[i][0].sendJSONmsg('(remove) ' + username, isBinary)
+                    clients[i][0].sendJSONmsg('(msg) Farewell ' + username + ' !', isBinary)
         elif words[0] == '(Msg)':
             # message received
             # 1) write message into db
@@ -154,25 +155,30 @@ class MyServerProtocol(WebSocketServerProtocol):
             msg = ''
             while i < len(words):
                 msg += words[i]
+                msg += ' '
                 i += 1
             # msg = whole message data without ids
             try:
-                cursor.execute("""INSERT INTO messages (message, created, user_id, group_id) VALUES (%s,now(),%s,%s)""",
-                               msg, uid, gid)
-            except:
-                print('Cannot execute query ' + 'INSERT INTO messages (message, created, user_id, group_id) VALUES ' +
-                      msg + ',now(),' + uid + ',' + gid)
+                cursor.execute("""INSERT INTO messages (message, created, updated, user_id, group_id)
+                                  VALUES ('{0}', now(), now(), '{1}', '{2}')""".format(msg, int(uid), int(gid)))
+            except psycopg2.Error as exc:
+                print(exc)
                 return
-            for i in range(len(clients[0])):
-                if clients[3][i] == uid:
-                    clients[0][i].sendJSONmsg(msg, isBinary)
+            print(clients[0])
+            for i in range(len(clients)):
+                if clients[i][3] == gid:
+                    clients[i][0].sendJSONmsg(msg, isBinary)
 
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {0}".format(reason))
 
     def sendJSONmsg(self, message, isBinary):
+        print(self)
         jsonmsg = json.dumps(message)
-        self.sendMessage(jsonmsg, isBinary)
+        # print(type(jsonmsg), jsonmsg)
+        # jsonmsg = str(message).encode('utf-8')
+        self.sendMessage(jsonmsg.encode('utf-8'), isBinary)
+        # self.sendMessage(jsonmsg, True)
 
 
 if __name__ == '__main__':
@@ -189,6 +195,7 @@ if __name__ == '__main__':
     except:
         print('Database connection failed. Server will shut down.')
         exit()
+    connection.autocommit = True
     cursor = connection.cursor()
     factory = WebSocketServerFactory(u"ws://localhost:6544")
     factory.protocol = MyServerProtocol
